@@ -1,0 +1,50 @@
+import heapq
+
+"""Reading in the graph and getting it into a form usuable for our implementation
+of Dijkstra."""
+
+dijkstraGraph = open('dijkstraData.txt', 'r')
+dijkstraGraph = dijkstraGraph.read()
+dijkstraGraph = dijkstraGraph.split('\n')
+for i in range(0, len(dijkstraGraph)):
+    dijkstraGraph[i] = dijkstraGraph[i].split('\t')
+    dijkstraGraph[i] = dijkstraGraph[i][:-1]
+dijkstraGraph = dijkstraGraph[:-1]
+
+for j in range(0, len(dijkstraGraph)):
+    for k in range(1, len(dijkstraGraph[j])):
+        dijkstraGraph[j][k] = dijkstraGraph[j][k].split(',')
+
+
+
+#%%
+
+
+"""Initializing the vertex heap."""
+
+vertexHeap = [(0, 1)]
+heapq.heapify(vertexHeap)
+
+"""array containing vertices whose shortest paths from the starting vertex have already
+been found"""
+
+explored_vertices = []
+
+"""Entries of the final_output array are tuples. The second entry of each tuple is a (distinct)
+vertex of the graph and the first entry of each tuple is the minimum distance from that tuple's
+vertex to the starting vertex"""
+
+final_output = []
+
+
+
+while len(vertexHeap) > 0:
+    w = heapq.heappop(vertexHeap)
+    if w[1] not in explored_vertices:
+        final_output.append(w)
+        explored_vertices.append(w[1])
+    
+        for i in range(1, len(dijkstraGraph[w[1]-1])):
+            key = w[0] + int(dijkstraGraph[w[1]-1][i][1])
+            heapq.heappush(vertexHeap, (key, int(dijkstraGraph[w[1]-1][i][0])))
+
