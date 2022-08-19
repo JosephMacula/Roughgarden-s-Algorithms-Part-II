@@ -1,0 +1,301 @@
+import math, queue
+
+def load_adjacency_rep_graph(file_name):
+    
+    """ Function that loads an undirected graph given the filename for a text file containing an adjacency list representation
+    of the graph. Returns an adjacency list representation of the graph realized as a nested list. Vertices 
+    of the graph are represented implicitly as the indices of the outer list. Lists of vertices represent 
+    corresponding vertex neighborhoods. 
+    """
+    graph_file = open(file_name, 'r')
+    graph_adjacency_list_rep = graph_file.read()
+    graph_adjacency_list_rep = graph_adjacency_list_rep.split('\n')
+    graph_adjacency_list_rep = graph_adjacency_list_rep[:-1]
+    
+    num_vertex_neighborhoods = len(graph_adjacency_list_rep)
+    
+    for vertex_neighborhood in range(0, num_vertex_neighborhoods):
+        graph_adjacency_list_rep[vertex_neighborhood] = graph_adjacency_list_rep[vertex_neighborhood].split('\t')
+        graph_adjacency_list_rep[vertex_neighborhood].pop()
+        graph_adjacency_list_rep[vertex_neighborhood].pop(0)
+        for vertex in range(0, len(graph_adjacency_list_rep[vertex_neighborhood])):
+            graph_adjacency_list_rep[vertex_neighborhood][vertex] = int(graph_adjacency_list_rep[vertex_neighborhood][vertex])
+    
+    return graph_adjacency_list_rep
+
+def load_edge_rep_graph(file_name):
+    
+    """ Function that loads a directed graph given the filename for a text file containing a list of 
+    directed edges of the graph. Returns a list whose elements correspond to the directed edges of the 
+    graph. These edges are represented as 2 element lists. The tail of the edge is the first element, the 
+    head is the second."""
+    
+    graph_file = open(file_name, 'r')
+    graph_edge_rep = graph_file.read()
+    graph_edge_rep = graph_edge_rep.split('\n')
+    
+    num_directed_edges = len(graph_edge_rep)
+    
+    for directed_edge in range(0, num_directed_edges):
+        graph_edge_rep[directed_edge] = graph_edge_rep[directed_edge].split(' ')
+        graph_edge_rep[directed_edge].pop()
+        for vertex in range(0, 2):
+            graph_edge_rep[directed_edge][vertex] = int(graph_edge_rep[directed_edge][vertex])
+    
+    return graph_edge_rep
+
+#%%
+
+def BFS(input_graph, starting_vertex):
+    
+    """Function that takes in two arguments. The first is an undirected graph in adjacency list representation
+    (i.e., a list where each element is a list and where each such list contains all vertices adjacent to 
+    the vertex represented implicitly as the index (plus 1) of this list). The second is the starting
+    vertex. Returns a list consisting of 1s and 0s. An entry of this list is 1 if the vertex corresponding
+    to the index (plus 1) of this entry is reachable from the starting vertex and is 0 otherwise."""
+    
+    num_vertices = len(input_graph)
+    explored_vertices_indicator_list = [0]*num_vertices
+    explored_vertices_indicator_list[starting_vertex - 1] = 1
+    
+    vertex_queue = queue.Queue()
+    vertex_queue.put(starting_vertex)
+    while vertex_queue.empty() == False:
+        v = vertex_queue.get()
+        for vertex in input_graph[v - 1]:
+            if explored_vertices_indicator_list[vertex - 1] == 0:
+                explored_vertices_indicator_list[vertex - 1] = 1
+                vertex_queue.put(vertex)
+    
+    return explored_vertices_indicator_list
+
+
+def shortest_path(input_graph, starting_vertex):
+    
+    """Function that takes in an undirected graph in adjacency list representation with unit-length edges
+    and a starting vertex. Outputs a list whose entries are the length of the shortest path from
+    the chosen starting vertex to the vertex represented by the index (plus 1) of the given entry."""
+    
+    num_vertices = len(input_graph)
+    explored_vertices_indicator_list = [0]*num_vertices
+    explored_vertices_indicator_list[starting_vertex - 1] = 1
+    distances_from_starting_vertex = [math.inf]*num_vertices
+    distances_from_starting_vertex[starting_vertex - 1] = 0
+    
+    vertex_queue = queue.Queue()
+    vertex_queue.put(starting_vertex)
+    while vertex_queue.empty() == False:
+        v = vertex_queue.get()
+        for vertex in input_graph[v - 1]:
+            if explored_vertices_indicator_list[vertex - 1] == 0:
+                explored_vertices_indicator_list[vertex - 1] = 1
+                distances_from_starting_vertex[vertex - 1] = distances_from_starting_vertex[v - 1] + 1
+                vertex_queue.put(vertex)
+    
+    return distances_from_starting_vertex
+
+def UCC(input_graph):
+    
+    """Function that takes in an undirected graph in adjacency list representation and returns a list
+    consisting of two elements. The first element is the number of connected components of the graph.
+    The second element is an integer-valued list. Each entry of the list is the connected component to 
+    which the vertex represented by the index (plus 1) of the entry belongs."""
+    
+    num_vertices = len(input_graph)
+    explored_vertices_indicator_list = [0]*num_vertices
+    connected_component_indicator_list = [0]*num_vertices
+    num_connected_components = 0
+    
+    for vertex in range(1, num_vertices + 1):
+        if explored_vertices_indicator_list[vertex - 1] == 0:
+            num_connected_components += 1
+            explored_vertices_indicator_list[vertex - 1] = 1
+            vertex_queue = queue.Queue()
+            vertex_queue.put(vertex)
+            
+            while vertex_queue.empty() == False:
+                v = vertex_queue.get()
+                connected_component_indicator_list[v - 1] = num_connected_components
+                for vertex_neighbor in input_graph[v - 1]:
+                    if explored_vertices_indicator_list[vertex_neighbor - 1] == 0:
+                        explored_vertices_indicator_list[vertex_neighbor - 1] = 1
+                        vertex_queue.put(vertex_neighbor)
+    
+    return [num_connected_components, connected_component_indicator_list]
+
+#%%
+
+def DFS(input_graph, starting_vertex):
+    
+    """Function that takes in an undirected graph in adjacency list representation and
+    some vertex of that graph and returns a list whose entries are indicator variables indicating 
+    whether each vertex of the graph is reachable from the starting vertex (a '0' indicates that
+    the vertex represented by the index of the entry (plus 1) is not reachable from the starting vertex,
+    while a '1' indicates that it is reachable from the starting vertex."""
+    
+    num_vertices = len(input_graph)
+    explored_vertices_indicator_list = [0]*num_vertices
+    
+    vertex_stack = [starting_vertex]
+    while len(vertex_stack) > 0:
+        v = vertex_stack.pop()
+        if explored_vertices_indicator_list[v - 1] == 0:
+            explored_vertices_indicator_list[v - 1] = 1
+            for vertex in input_graph[v - 1]:
+                vertex_stack.append(vertex)
+    
+    return explored_vertices_indicator_list
+
+
+
+def DFS_recursive(input_graph, starting_vertex, explored_vertices_indicator_list):
+    
+    """Recursive implementation of DFS. Note that here we need to pass the indicator list for
+    explored vertices to the function to avoid having entries overwritten in recursive calls."""
+    
+    explored_vertices_indicator_list[starting_vertex - 1] = 1
+    for vertex in input_graph[starting_vertex - 1]:
+        if explored_vertices_indicator_list[vertex - 1] == 0:
+            DFS_recursive(input_graph, vertex, explored_vertices_indicator_list)
+    
+    return explored_vertices_indicator_list
+
+def edge_rep_to_adjacency_rep(input_graph):
+    
+    """Takes in a directed graph represented by a list whose entries are lists of length 2 where the first
+    entry is the tail of an edge and the second entry is the head of that edge. Outputs the directed graph
+    in adjacency list representation. Each adjacency list is the set of vertices with an incoming edge 
+    from the vertex represented by the index (plus 1) of the adjacency list."""
+    
+    num_vertices = 0
+    
+    for edge in input_graph:
+        if edge[0] > num_vertices:
+            num_vertices = edge[0]
+    
+    for edge in input_graph:
+        if edge[1] > num_vertices:
+            num_vertices = edge[1]
+
+    adjacency_graph = [0]*num_vertices
+    for i in range(0, len(adjacency_graph)):
+        adjacency_graph[i] = []
+    
+    for edge in input_graph:
+        adjacency_graph[edge[0] - 1].append(edge[1])
+    
+    return adjacency_graph
+    
+    
+def REVERSE_edge_rep_to_adjacency_rep(input_graph):
+    
+    """Takes in a directed graph represented by a list whose entries are lists of length 2 where the first
+    entry is the tail of an edge and the second entry is the head of that edge. Outputs the directed graph
+    in adjacency list representation. Each adjacency list is the set of vertices with an outgoing edge to
+    the vertex represented by the index (plus 1) of the adjacency list."""
+    
+    num_vertices = 0
+    
+    for edge in input_graph:
+        if edge[0] > num_vertices:
+            num_vertices = edge[0]
+    
+    for edge in input_graph:
+        if edge[1] > num_vertices:
+            num_vertices = edge[1]
+    
+    adjacency_graph = [0]*num_vertices
+    for i in range(0, len(adjacency_graph)):
+        adjacency_graph[i] = []
+    
+    for edge in input_graph:
+        adjacency_graph[edge[1] - 1].append(edge[0])
+    
+    return adjacency_graph
+
+#%%
+
+
+def DFS_for_topological_sort(input_graph, starting_vertex, explored_vertices_indicator_list, order_indicator_list, topological_ordering, current_label):
+    
+"""Computes a topological ordering on a subset of the input graph. The input graph a directed graph in adjacency list representation, with each list the set of vertices with an incoming edge from the vertex represented by the index (plus 1) of the adjacency list."""
+    
+"""The first time a vertex v triggers the elif statement in the while loop below, there must be no outgoing edges from that vertex. 
+Thus, we can assign it the current label value with the guarantee that we do not violate the rule of a topological order. If the vertex v triggers this elif statement again, nothing happens since the entry of the order_indicator_list for v is set to 1, indicating that it has already been assigned a value in the topological ordering.""" 
+    
+"""The function needs to return the value of current label at termination of the while loop so that in the function iterative_topological_sort defined below, current_label2 starts at the right value for every call to DFS_for_topological_sort made in the for loop of iterative_topological_sort."""
+    
+    vertex_stack = [starting_vertex]
+    while len(vertex_stack) > 0:
+        v = vertex_stack[-1]
+        if explored_vertices_indicator_list[v - 1] == 0:
+            explored_vertices_indicator_list[v - 1] = 1
+            for vertex in input_graph[v - 1]:
+                
+                """For some reason, it is essential that we avoid appending the same vertex twice. I have
+                yet to figure out why."""
+                
+                if explored_vertices_indicator_list[vertex - 1] == 0:
+                    vertex_stack.append(vertex)    
+        elif explored_vertices_indicator_list[v - 1] == 1:
+            v = vertex_stack.pop()
+            if order_indicator_list[v - 1] == 0:
+                order_indicator_list[v - 1] = 1
+                topological_ordering[current_label - 1] = v
+                current_label -= 1
+             
+    return current_label
+    
+def iterative_topological_sort(input_graph):
+    
+"""Initialize all of our indicator lists along with current_label2, which holds the value in the topological ordering to be assigned next."""
+    
+    num_vertices = len(input_graph)
+    explored_vertices_indicator_list2 = [0]*num_vertices
+    order_indicator_list2 = [0]*num_vertices
+    topological_ordering2 = [0]*num_vertices
+    current_label2 = num_vertices
+    
+"""Compute a topological ordering. Note that this topological ordering will not necessarily be a true topological ordering (e.g., if the graph has a directed cycle, a topological ordering is impossible). However, it will yield a topological ordering of the SCC meta graph. In the loop below, """
+    
+    for i in range(1, num_vertices + 1):
+        if explored_vertices_indicator_list2[i-1] == 0:
+            current_label2 = DFS_for_topological_sort(input_graph, i, explored_vertices_indicator_list2, order_indicator_list2, topological_ordering2, current_label2)
+    return topological_ordering2
+
+#%%
+
+def DFS_SCC(input_graph, starting_vertex, num_SCC, explored_vertices_indic_list, SCC_indicator_list, SCC_size_list):
+    vertex_stack = [starting_vertex]
+    while len(vertex_stack) > 0:
+        v = vertex_stack.pop()
+        if explored_vertices_indic_list[v - 1] == 0:
+            explored_vertices_indic_list[v - 1] = 1
+            SCC_indicator_list[v - 1] = num_SCC
+            SCC_size_list[num_SCC - 1] += 1
+           
+            for vertex in input_graph[v - 1]:
+                vertex_stack.append(vertex)
+
+
+def kosaraju(input_graph, input_graph_reversed):
+    topological_ordering = iterative_topological_sort(input_graph_reversed)
+    
+    number_of_vertices = len(input_graph)
+
+    explored_vertices_indicator_list3 = [0]*number_of_vertices
+    SCC_indicator_list2 = [0]*number_of_vertices
+    SCC_size_list2 = [0]*number_of_vertices
+    
+    num_SCC = 0
+    
+    for vertex in topological_ordering:
+        if explored_vertices_indicator_list3[vertex - 1] == 0:
+            num_SCC += 1
+            DFS_SCC(input_graph, vertex, num_SCC, explored_vertices_indicator_list3, SCC_indicator_list2, SCC_size_list2)
+    
+    SCC_size_list2.sort()
+    SCC_size_list2.reverse()
+            
+    return SCC_size_list2
+    
